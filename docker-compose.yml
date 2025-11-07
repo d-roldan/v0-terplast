@@ -84,7 +84,7 @@ services:
   # 🎨 TERPLAST FRONTEND - Sistema de Control de Tanques
   terplast-frontend:
     build:
-      context: .
+      context: ./FrontEnd TERPLAST
       dockerfile: Dockerfile
     container_name: terplast_frontend
     restart: always
