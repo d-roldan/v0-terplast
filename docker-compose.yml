@@ -52,13 +52,17 @@ services:
   node-red-envasado:
     image: nodered/node-red:latest
     container_name: node-red-envasado
+    restart: always
     ports:
-      - "1884:1880"
+      - "1880:1880"
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+      - NODE_RED_CREDENTIAL_SECRET=envasado123
     volumes:
-      - node-red-envasado-data:/data
-    restart: unless-stopped
+      - ./ENVASADO/data:/data
     networks:
-      - monitoring_net
+      red_sintetico:
+        ipv4_address: 172.29.0.16
 
   # 🛰️ BROKER MQTT SEGURO
   mosquitto:
@@ -104,8 +108,6 @@ networks:
     ipam:
       config:
         - subnet: 172.29.0.0/16
-  monitoring_net:
-    driver: bridge
 
 volumes:
   node-red-envasado-data:
