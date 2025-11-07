@@ -1,0 +1,33 @@
+# Dependencias
+node_modules
+npm-debug.log
+
+# Next.js
+.next
+out
+.cache
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Archivos de desarrollo
+.env*.local
+.vscode
+.idea
+
+# Testing
+coverage
+.nyc_output
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
