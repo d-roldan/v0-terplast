@@ -194,11 +194,18 @@ export function DualTankControl({
           onStop={() => setShowStopDialog(true)}
         />
 
-        <AutonomyIndicator
-          currentCount={activeState.counter}
-          standardCount={STANDARD_AUTONOMY}
-          tankNumber={activeTank}
-        />
+        {activeState.processData ? (
+          <AutonomyIndicator
+            availableKg={activeState.weight}
+            packagingStandardKgMin={activeState.processData.packagingStandardKgMin}
+            targetQuantityKg={activeState.processData.targetQuantityKg}
+            tankNumber={activeTank}
+          />
+        ) : (
+          <div className="rounded-xl p-4 border border-[#3a3e45] bg-[#1a1e25] flex items-center justify-center">
+            <p className="text-gray-500 text-center text-sm">Inicie un proceso para ver la autonomía</p>
+          </div>
+        )}
       </div>
 
       <div>

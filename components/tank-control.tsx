@@ -28,6 +28,8 @@ export interface ProcessData {
   format: Format
   legajo: string
   ordenEnvasado: string
+  targetQuantityKg: number // Kg objetivo a envasar en la orden
+  packagingStandardKgMin: number // Estándar de envasado en Kg/min
 }
 
 export interface TankState {
@@ -160,7 +162,18 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
           onStop={() => setShowStopDialog(true)}
         />
 
-        <AutonomyIndicator currentCount={tankState.counter} standardCount={STANDARD_AUTONOMY} tankNumber={tankNumber} />
+        {tankState.processData ? (
+          <AutonomyIndicator
+            availableKg={tankState.weight}
+            packagingStandardKgMin={tankState.processData.packagingStandardKgMin}
+            targetQuantityKg={tankState.processData.targetQuantityKg}
+            tankNumber={tankNumber}
+          />
+        ) : (
+          <div className="rounded-xl p-4 border border-[#3a3e45] bg-[#1a1e25] flex items-center justify-center">
+            <p className="text-gray-500 text-center text-sm">Inicie un proceso para ver la autonomía</p>
+          </div>
+        )}
       </div>
 
       <div>
