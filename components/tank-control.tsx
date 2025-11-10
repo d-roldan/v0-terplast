@@ -19,7 +19,7 @@ interface TankControlProps {
 }
 
 export type ProcessStatus = "idle" | "filling" | "stopped"
-export type Format = "5kg" | "10kg" | "20kg" | "25kg"
+export type Format = "1lt" | "4lt" | "5kg" | "10kg" | "20kg" | "25kg"
 
 export interface ProcessData {
   of: string
@@ -28,8 +28,8 @@ export interface ProcessData {
   format: Format
   legajo: string
   ordenEnvasado: string
-  targetQuantityKg: number // Kg objetivo a envasar en la orden
-  packagingStandardKgMin: number // Estándar de envasado en Kg/min
+  targetQuantity: number // Cantidad de envases a producir
+  gpm: number // Golpes Por Minuto (estándar del material)
 }
 
 export interface TankState {
@@ -39,9 +39,12 @@ export interface TankState {
   chartData: Array<{ x: number; y: number }>
   processData: ProcessData | null
   previousFormat?: Format
+  startTime?: number // Agregar startTime para calcular tiempo real
 }
 
 const formatWeights = {
+  "1lt": 1,
+  "4lt": 4,
   "5kg": 5,
   "10kg": 10,
   "20kg": 20,
@@ -117,6 +120,7 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
       chartData: [],
       counter: 0,
       previousFormat: tankState.processData?.format,
+      startTime: Date.now(),
     })
     setShowStartDialog(false)
   }
@@ -144,6 +148,7 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
       status: "idle",
       processData: null,
       previousFormat: tankState.processData?.format,
+      startTime: undefined,
     })
     setShowStopDialog(false)
   }
@@ -164,9 +169,10 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
 
         {tankState.processData ? (
           <AutonomyIndicator
-            availableKg={tankState.weight}
-            packagingStandardKgMin={tankState.processData.packagingStandardKgMin}
-            targetQuantityKg={tankState.processData.targetQuantityKg}
+            targetQuantity={tankState.processData.targetQuantity}
+            currentCount={tankState.counter}
+            gpm={tankState.processData.gpm}
+            startTime={tankState.startTime || null}
             tankNumber={tankNumber}
           />
         ) : (

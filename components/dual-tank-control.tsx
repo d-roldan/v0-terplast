@@ -21,6 +21,8 @@ interface DualTankControlProps {
 }
 
 const formatWeights = {
+  "1lt": 1,
+  "4lt": 4,
   "5kg": 5,
   "10kg": 10,
   "20kg": 20,
@@ -118,6 +120,7 @@ export function DualTankControl({
       chartData: [],
       counter: 0,
       previousFormat: activeState.processData?.format,
+      startTime: Date.now(),
     })
     setShowStartDialog(false)
   }
@@ -144,6 +147,7 @@ export function DualTankControl({
     onUpdateActive({
       status: "idle",
       processData: null,
+      startTime: undefined,
     })
     setShowStopDialog(false)
   }
@@ -196,9 +200,10 @@ export function DualTankControl({
 
         {activeState.processData ? (
           <AutonomyIndicator
-            availableKg={activeState.weight}
-            packagingStandardKgMin={activeState.processData.packagingStandardKgMin}
-            targetQuantityKg={activeState.processData.targetQuantityKg}
+            targetQuantity={activeState.processData.targetQuantity}
+            currentCount={activeState.counter}
+            gpm={activeState.processData.gpm}
+            startTime={activeState.startTime || null}
             tankNumber={activeTank}
           />
         ) : (

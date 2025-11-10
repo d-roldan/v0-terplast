@@ -22,8 +22,8 @@ export function StartProcessDialog({ onClose, onConfirm }: StartProcessDialogPro
     format: "25kg",
     legajo: "",
     ordenEnvasado: "",
-    targetQuantityKg: 0,
-    packagingStandardKgMin: 0,
+    targetQuantity: 0,
+    gpm: 0,
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,8 +33,8 @@ export function StartProcessDialog({ onClose, onConfirm }: StartProcessDialogPro
       formData.material &&
       formData.legajo &&
       formData.ordenEnvasado &&
-      formData.targetQuantityKg > 0 &&
-      formData.packagingStandardKgMin > 0
+      formData.targetQuantity > 0 &&
+      formData.gpm > 0
     ) {
       onConfirm(formData)
     }
@@ -110,6 +110,7 @@ export function StartProcessDialog({ onClose, onConfirm }: StartProcessDialogPro
                 value={formData.material}
                 onChange={(e) => setFormData({ ...formData, material: e.target.value })}
                 className="bg-[#2a2e35] border-[#3a3e45] text-white"
+                placeholder="Ej: 3295"
                 required
               />
             </div>
@@ -124,6 +125,8 @@ export function StartProcessDialog({ onClose, onConfirm }: StartProcessDialogPro
                 onChange={(e) => setFormData({ ...formData, format: e.target.value as Format })}
                 className="w-full h-10 px-3 rounded-md bg-[#2a2e35] border border-[#3a3e45] text-white"
               >
+                <option value="1lt">1 lt</option>
+                <option value="4lt">4 lt</option>
                 <option value="5kg">5 kg</option>
                 <option value="10kg">10 kg</option>
                 <option value="20kg">20 kg</option>
@@ -141,6 +144,7 @@ export function StartProcessDialog({ onClose, onConfirm }: StartProcessDialogPro
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="bg-[#2a2e35] border-[#3a3e45] text-white"
+              placeholder="Ej: Lavable Ext Mate Bermellon"
             />
           </div>
 
@@ -148,43 +152,45 @@ export function StartProcessDialog({ onClose, onConfirm }: StartProcessDialogPro
             <h3 className="text-lg font-semibold text-cyan-400 mb-3">Parámetros de Autonomía</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="targetQuantityKg" className="text-gray-300">
-                  Cantidad Objetivo (Kg)
+                <Label htmlFor="targetQuantity" className="text-gray-300">
+                  Cantidad a Envasar
                 </Label>
                 <Input
-                  id="targetQuantityKg"
+                  id="targetQuantity"
                   type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.targetQuantityKg || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, targetQuantityKg: Number.parseFloat(e.target.value) || 0 })
-                  }
+                  min="1"
+                  value={formData.targetQuantity || ""}
+                  onChange={(e) => setFormData({ ...formData, targetQuantity: Number.parseInt(e.target.value) || 0 })}
                   className="bg-[#2a2e35] border-[#3a3e45] text-white"
-                  placeholder="Ej: 5000"
+                  placeholder="Ej: 1000"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Total de kg a envasar en esta orden</p>
+                <p className="text-xs text-gray-500 mt-1">Cantidad total de envases a producir</p>
               </div>
 
               <div>
-                <Label htmlFor="packagingStandardKgMin" className="text-gray-300">
-                  Estándar de Envasado (Kg/min)
+                <Label htmlFor="gpm" className="text-gray-300">
+                  GPM (Golpes Por Minuto)
                 </Label>
                 <Input
-                  id="packagingStandardKgMin"
+                  id="gpm"
                   type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.packagingStandardKgMin || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, packagingStandardKgMin: Number.parseFloat(e.target.value) || 0 })
-                  }
+                  min="1"
+                  value={formData.gpm || ""}
+                  onChange={(e) => setFormData({ ...formData, gpm: Number.parseInt(e.target.value) || 0 })}
                   className="bg-[#2a2e35] border-[#3a3e45] text-white"
-                  placeholder="Ej: 50"
+                  placeholder="Ej: 48"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Velocidad de envasado del material</p>
+                <p className="text-xs text-gray-500 mt-1">Estándar de envasado del material</p>
+              </div>
+            </div>
+            <div className="mt-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+              <p className="text-xs text-cyan-400 font-semibold mb-1">Ejemplos de GPM por formato:</p>
+              <div className="text-xs text-gray-400 space-y-0.5">
+                <div>• 1lt = 48 gol/min</div>
+                <div>• 4lt = 12 gol/min</div>
+                <div>• 20lt = 5 gol/min</div>
               </div>
             </div>
           </div>
