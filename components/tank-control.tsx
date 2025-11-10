@@ -99,7 +99,7 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
         if (status === "dentro") processMetrics.current.withinTolerance++
         else if (status === "alerta") processMetrics.current.inAlert++
         else processMetrics.current.outOfTolerance++
-      }, 2000)
+      }, 4000) // Aumentado a 4 segundos
 
       return () => clearInterval(interval)
     }
