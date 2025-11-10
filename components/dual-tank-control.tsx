@@ -60,8 +60,8 @@ export function DualTankControl({
   // Simular cambio de peso durante el envasado
   useEffect(() => {
     if (activeState.status === "filling" && activeState.processData) {
-      const simulatePackaging = () => {
-        const nominalWeight = formatWeights[activeState.processData!.format]
+      const interval = setInterval(() => {
+        const nominalWeight = formatWeights[activeState.processData.format]
         const tolerance = nominalWeight * 0.02
         const randomWeight = nominalWeight + (Math.random() * tolerance * 4 - tolerance * 2)
 
@@ -92,18 +92,9 @@ export function DualTankControl({
         if (status === "dentro") processMetrics.current.withinTolerance++
         else if (status === "alerta") processMetrics.current.inAlert++
         else processMetrics.current.outOfTolerance++
+      }, 2000)
 
-        // Variar el intervalo entre 1500ms y 3500ms para simular cambios en velocidad
-        // Esto hará que el GPM real fluctúe y cambie el indicador de autonomía
-        const variableInterval = 1500 + Math.random() * 2000
-        setTimeout(simulatePackaging, variableInterval)
-      }
-
-      // Iniciar la primera iteración con un delay aleatorio
-      const initialDelay = 1500 + Math.random() * 2000
-      const timeoutId = setTimeout(simulatePackaging, initialDelay)
-
-      return () => clearTimeout(timeoutId)
+      return () => clearInterval(interval)
     }
   }, [
     activeState.status,

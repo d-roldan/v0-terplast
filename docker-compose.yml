@@ -1,14 +1,13 @@
 version: '3.8'
 
 services:
-  # Tu aplicación Next.js
-  terplast-app:
+  terplast-v2:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: terplast-app
+    container_name: terplast-v2
     ports:
-      - "3000:3000"
+      - "3001:3000"  # Puerto 3001 para evitar conflicto con v1
     environment:
       - NODE_ENV=production
       - MQTT_BROKER_URL=mqtt://mqtt:1883
