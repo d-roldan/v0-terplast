@@ -7,6 +7,7 @@ import { TankInfo } from "./tank-info"
 import { WeightChart } from "./weight-chart"
 import { StartProcessDialog } from "./start-process-dialog"
 import { StopProcessDialog } from "./stop-process-dialog"
+import { AutonomyIndicator } from "./autonomy-indicator"
 import { useState } from "react"
 import type { PackagingSummary } from "./activity-log"
 
@@ -44,6 +45,8 @@ const formatWeights = {
   "20kg": 20,
   "25kg": 25,
 }
+
+const STANDARD_AUTONOMY = 1000
 
 export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary }: TankControlProps) {
   const [showStartDialog, setShowStartDialog] = useState(false)
@@ -147,14 +150,18 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
     <div className="p-3 space-y-2">
       <TankHeader tankNumber={tankNumber} status={tankState.status} />
 
-      <TankInfo
-        status={tankState.status}
-        processData={tankState.processData}
-        weight={tankState.weight}
-        counter={tankState.counter}
-        onStart={() => setShowStartDialog(true)}
-        onStop={() => setShowStopDialog(true)}
-      />
+      <div className="grid grid-cols-[1fr_300px] gap-3">
+        <TankInfo
+          status={tankState.status}
+          processData={tankState.processData}
+          weight={tankState.weight}
+          counter={tankState.counter}
+          onStart={() => setShowStartDialog(true)}
+          onStop={() => setShowStopDialog(true)}
+        />
+
+        <AutonomyIndicator currentCount={tankState.counter} standardCount={STANDARD_AUTONOMY} tankNumber={tankNumber} />
+      </div>
 
       <div>
         <WeightChart

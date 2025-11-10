@@ -7,6 +7,7 @@ import { TankInfo } from "./tank-info"
 import { WeightChart } from "./weight-chart"
 import { StartProcessDialog } from "./start-process-dialog"
 import { StopProcessDialog } from "./stop-process-dialog"
+import { AutonomyIndicator } from "./autonomy-indicator"
 import type { TankState, ProcessData } from "./tank-control"
 import type { PackagingSummary } from "./activity-log"
 import { cn } from "@/lib/utils"
@@ -25,6 +26,8 @@ const formatWeights = {
   "20kg": 20,
   "25kg": 25,
 }
+
+const STANDARD_AUTONOMY = 1000
 
 export function DualTankControl({
   tank3State,
@@ -181,14 +184,22 @@ export function DualTankControl({
 
       <TankHeader tankNumber={activeTank} status={activeState.status} />
 
-      <TankInfo
-        status={activeState.status}
-        processData={activeState.processData}
-        weight={activeState.weight}
-        counter={activeState.counter}
-        onStart={() => setShowStartDialog(true)}
-        onStop={() => setShowStopDialog(true)}
-      />
+      <div className="grid grid-cols-[1fr_300px] gap-3">
+        <TankInfo
+          status={activeState.status}
+          processData={activeState.processData}
+          weight={activeState.weight}
+          counter={activeState.counter}
+          onStart={() => setShowStartDialog(true)}
+          onStop={() => setShowStopDialog(true)}
+        />
+
+        <AutonomyIndicator
+          currentCount={activeState.counter}
+          standardCount={STANDARD_AUTONOMY}
+          tankNumber={activeTank}
+        />
+      </div>
 
       <div>
         <WeightChart
