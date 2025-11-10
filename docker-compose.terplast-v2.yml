@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  terplast-v2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terplast-v2
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_MQTT_BROKER_URL=ws://mosquitto:9001
+    networks:
+      - terplast-network
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+
+networks:
+  terplast-network:
+    external: true
