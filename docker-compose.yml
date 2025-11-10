@@ -1,113 +1,58 @@
 version: '3.8'
 
 services:
-  # 🧱 NODE-RED VISUALIZACION
-  nodered_visualizacion:
-    image: nodered/node-red:latest
-    container_name: nodered_visualizacion
-    restart: always
-    ports:
-      - "1881:1880"
-    environment:
-      - TZ=America/Argentina/Buenos_Aires
-      - NODE_RED_CREDENTIAL_SECRET=visualizacion123
-    volumes:
-      - ./VISUALIZACION/data:/data
-    networks:
-      red_sintetico:
-        ipv4_address: 172.29.0.11
-
-  # 🧱 NODE-RED FABRICACION
-  nodered_fabricacion:
-    image: nodered/node-red:latest
-    container_name: nodered_fabricacion
-    restart: always
-    ports:
-      - "1882:1880"
-    environment:
-      - TZ=America/Argentina/Buenos_Aires
-      - NODE_RED_CREDENTIAL_SECRET=fabricacion123
-    volumes:
-      - ./FABRICACION/data:/data
-    networks:
-      red_sintetico:
-        ipv4_address: 172.29.0.12
-
-  # 🧱 NODE-RED LABORATORIO
-  nodered_laboratorio:
-    image: nodered/node-red:latest
-    container_name: nodered_laboratorio
-    restart: always
-    ports:
-      - "1883:1880"
-    environment:
-      - TZ=America/Argentina/Buenos_Aires
-      - NODE_RED_CREDENTIAL_SECRET=laboratorio123
-    volumes:
-      - ./LABORATORIO/data:/data
-    networks:
-      red_sintetico:
-        ipv4_address: 172.29.0.13
-  
-  node-red-envasado:
-    image: nodered/node-red:latest
-    container_name: node-red-envasado
-    restart: always
-    ports:
-      - "1880:1880"
-    environment:
-      - TZ=America/Argentina/Buenos_Aires
-      - NODE_RED_CREDENTIAL_SECRET=envasado123
-    volumes:
-      - ./ENVASADO/data:/data
-    networks:
-      red_sintetico:
-        ipv4_address: 172.29.0.16
-
-  # 🛰️ BROKER MQTT SEGURO
-  mosquitto:
-    image: eclipse-mosquitto:2.0
-    container_name: mqtt_broker
-    restart: always
-    ports:
-      - "1884:1883"       # Puerto MQTT
-      - "9001:9001"       # WebSocket opcional
-    volumes:
-      - ./mosquitto/config:/mosquitto/config
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
-      - ./mosquitto/passwords:/mosquitto/passwords
-    networks:
-      red_sintetico:
-        ipv4_address: 172.29.0.14
-
-  # 🎨 TERPLAST FRONTEND - Sistema de Control de Tanques
-  terplast-frontend:
+  # Tu aplicación Next.js
+  terplast-app:
     build:
-      context: ./FrontEnd TERPLAST
+      context: .
       dockerfile: Dockerfile
-    container_name: terplast_frontend
-    restart: always
+    container_name: terplast-app
     ports:
       - "3000:3000"
     environment:
-      - TZ=America/Argentina/Buenos_Aires
       - NODE_ENV=production
-      - NEXT_PUBLIC_MQTT_BROKER_URL=ws://172.29.0.14:9001
-      - NEXT_PUBLIC_MQTT_USERNAME=
-      - NEXT_PUBLIC_MQTT_PASSWORD=
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - NODERED_URL=http://nodered:1880
     depends_on:
-      - mosquitto
+      - mqtt
+      - nodered
     networks:
-      red_sintetico:
-        ipv4_address: 172.29.0.15
+      - terplast-network
+    restart: unless-stopped
+
+  # MQTT Broker (si no lo tienes ya)
+  mqtt:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mqtt-data:/mosquitto/data
+      - mqtt-logs:/mosquitto/log
+    networks:
+      - terplast-network
+    restart: unless-stopped
+
+  # Node-RED (si no lo tienes ya)
+  nodered:
+    image: nodered/node-red:latest
+    container_name: node-red
+    ports:
+      - "1880:1880"
+    volumes:
+      - nodered-data:/data
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+    networks:
+      - terplast-network
+    restart: unless-stopped
 
 networks:
-  red_sintetico:
+  terplast-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.29.0.0/16
 
 volumes:
-  node-red-envasado-data:
+  mqtt-data:
+  mqtt-logs:
+  nodered-data:
