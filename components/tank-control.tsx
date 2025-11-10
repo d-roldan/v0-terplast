@@ -7,13 +7,19 @@ import { TankInfo } from "./tank-info"
 import { WeightChart } from "./weight-chart"
 import { StartProcessDialog } from "./start-process-dialog"
 import { StopProcessDialog } from "./stop-process-dialog"
+import { AutonomyIndicator } from "./autonomy-indicator"
 import { useState } from "react"
 import type { PackagingSummary } from "./activity-log"
-import { useMQTTClient } from "@/lib/mqtt-client"
-import type { TankControlProps } from "./tank-control-props"
+
+interface TankControlProps {
+  tankNumber: number
+  tankState: TankState
+  onUpdateState: (newState: Partial<TankState>) => void
+  onAddSummary: (summary: Omit<PackagingSummary, "id">) => void
+}
 
 export type ProcessStatus = "idle" | "filling" | "stopped"
-export type Format = "5kg" | "10kg" | "20kg" | "25kg"
+export type Format = "1lt" | "4lt" | "5kg" | "10kg" | "20kg" | "25kg"
 
 export interface ProcessData {
   of: string
@@ -22,6 +28,8 @@ export interface ProcessData {
   format: Format
   legajo: string
   ordenEnvasado: string
+  targetQuantity: number // Cantidad de envases a producir
+  gpm: number // Golpes Por Minuto (estándar del material)
 }
 
 export interface TankState {
@@ -31,20 +39,23 @@ export interface TankState {
   chartData: Array<{ x: number; y: number }>
   processData: ProcessData | null
   previousFormat?: Format
+  startTime?: number // Agregar startTime para calcular tiempo real
 }
 
 const formatWeights = {
+  "1lt": 1,
+  "4lt": 4,
   "5kg": 5,
   "10kg": 10,
   "20kg": 20,
   "25kg": 25,
 }
 
+const STANDARD_AUTONOMY = 1000
+
 export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary }: TankControlProps) {
   const [showStartDialog, setShowStartDialog] = useState(false)
   const [showStopDialog, setShowStopDialog] = useState(false)
-
-  const mqtt = useMQTTClient()
 
   const processMetrics = useRef({
     startTime: new Date(),
@@ -55,74 +66,44 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
   })
 
   useEffect(() => {
-    if (!mqtt.isConnected) return
+    if (tankState.status === "filling" && tankState.processData) {
+      const interval = setInterval(() => {
+        const nominalWeight = formatWeights[tankState.processData.format]
+        const tolerance = nominalWeight * 0.02
+        const randomWeight = nominalWeight + (Math.random() * tolerance * 4 - tolerance * 2)
 
-    const tankId = `tk${tankNumber}`
+        onUpdateState({
+          weight: tankState.weight + Math.random() * 50 - 25,
+          counter: tankState.counter + 1,
+          chartData: [
+            ...tankState.chartData,
+            {
+              x: tankState.chartData.length + 1,
+              y: randomWeight,
+            },
+          ].slice(-100),
+        })
 
-    mqtt.subscribe(`terplast/${tankId}/peso_tanque`, (message) => {
-      try {
-        const data = JSON.parse(message)
-        console.log(`[v0] Peso tanque ${tankNumber} recibido:`, data.peso)
-        onUpdateState({ weight: data.peso })
-      } catch (error) {
-        console.error("[v0] Error parseando peso_tanque:", error)
-      }
-    })
-
-    mqtt.subscribe(`terplast/${tankId}/peso_envase`, (message) => {
-      try {
-        const data = JSON.parse(message)
-        console.log(`[v0] Envase ${data.numeroEnvase} recibido:`, data.peso)
-
-        if (tankState.status === "filling" && tankState.processData) {
-          const nominalWeight = formatWeights[tankState.processData.format]
-          const tolerance = nominalWeight * 0.02
-
-          onUpdateState({
-            counter: tankState.counter + 1,
-            chartData: [
-              ...tankState.chartData,
-              {
-                x: tankState.chartData.length + 1,
-                y: data.peso,
-              },
-            ].slice(-100),
-          })
-
-          const status =
-            data.peso < nominalWeight - tolerance
+        const status =
+          randomWeight < nominalWeight - tolerance
+            ? "fuera"
+            : randomWeight > nominalWeight + tolerance
               ? "fuera"
-              : data.peso > nominalWeight + tolerance
-                ? "fuera"
-                : data.peso >= nominalWeight - tolerance && data.peso <= nominalWeight - tolerance / 2
+              : randomWeight >= nominalWeight - tolerance && randomWeight <= nominalWeight - tolerance / 2
+                ? "alerta"
+                : randomWeight >= nominalWeight + tolerance / 2 && randomWeight <= nominalWeight + tolerance
                   ? "alerta"
-                  : data.peso >= nominalWeight + tolerance / 2 && data.peso <= nominalWeight + tolerance
-                    ? "alerta"
-                    : "dentro"
+                  : "dentro"
 
-          processMetrics.current.weights.push(data.peso)
-          if (status === "dentro") processMetrics.current.withinTolerance++
-          else if (status === "alerta") processMetrics.current.inAlert++
-          else processMetrics.current.outOfTolerance++
-        }
-      } catch (error) {
-        console.error("[v0] Error parseando peso_envase:", error)
-      }
-    })
+        processMetrics.current.weights.push(randomWeight)
+        if (status === "dentro") processMetrics.current.withinTolerance++
+        else if (status === "alerta") processMetrics.current.inAlert++
+        else processMetrics.current.outOfTolerance++
+      }, 4000) // Aumentado a 4 segundos
 
-    return () => {
-      mqtt.unsubscribe(`terplast/${tankId}/peso_tanque`)
-      mqtt.unsubscribe(`terplast/${tankId}/peso_envase`)
+      return () => clearInterval(interval)
     }
-  }, [
-    mqtt.isConnected,
-    tankNumber,
-    tankState.status,
-    tankState.processData,
-    tankState.counter,
-    tankState.chartData,
-    onUpdateState,
-  ])
+  }, [tankState.status, tankState.processData, tankState.weight, tankState.counter, tankState.chartData, onUpdateState])
 
   const handleStartProcess = (data: ProcessData) => {
     processMetrics.current = {
@@ -139,31 +120,18 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
       chartData: [],
       counter: 0,
       previousFormat: tankState.processData?.format,
+      startTime: Date.now(),
     })
     setShowStartDialog(false)
-
-    mqtt.publish(`terplast/tk${tankNumber}/comando`, {
-      accion: "iniciar",
-      timestamp: Date.now(),
-      data: data,
-    })
   }
 
   const handleStopProcess = () => {
     if (tankState.processData && processMetrics.current.weights.length > 0) {
       const weights = processMetrics.current.weights
-      const endTime = new Date()
-      const duracionSegundos = Math.floor((endTime.getTime() - processMetrics.current.startTime.getTime()) / 1000)
-
-      const disponibilidad = 100
-      const rendimiento = (tankState.counter / (duracionSegundos / 2)) * 100
-      const calidad = (processMetrics.current.withinTolerance / tankState.counter) * 100
-      const oee = (disponibilidad * rendimiento * calidad) / 10000
-
       const summary: Omit<PackagingSummary, "id"> = {
         tankNumber,
         startTime: processMetrics.current.startTime,
-        endTime,
+        endTime: new Date(),
         processData: tankState.processData,
         totalUnits: tankState.counter,
         withinTolerance: processMetrics.current.withinTolerance,
@@ -174,56 +142,45 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
         maxWeight: Math.max(...weights),
       }
       onAddSummary(summary)
-
-      mqtt.publish(`terplast/tk${tankNumber}/resumen`, {
-        tankId: `tk${tankNumber}`,
-        legajo: tankState.processData.legajo,
-        ordenEnvasado: tankState.processData.ordenEnvasado,
-        inicio: processMetrics.current.startTime.getTime(),
-        fin: endTime.getTime(),
-        duracionSegundos,
-        totalEnvases: tankState.counter,
-        pesoPromedio: summary.averageWeight,
-        pesoMin: summary.minWeight,
-        pesoMax: summary.maxWeight,
-        formatoSeleccionado: tankState.processData.format,
-        toleranciaMinima: formatWeights[tankState.processData.format] * 0.98,
-        toleranciaMaxima: formatWeights[tankState.processData.format] * 1.02,
-        envasesOptimos: processMetrics.current.withinTolerance,
-        envasesAlerta: processMetrics.current.inAlert,
-        envasesFuera: processMetrics.current.outOfTolerance,
-        disponibilidad: Math.round(disponibilidad * 100) / 100,
-        rendimiento: Math.round(rendimiento * 100) / 100,
-        calidad: Math.round(calidad * 100) / 100,
-        oee: Math.round(oee * 100) / 100,
-      })
     }
 
     onUpdateState({
       status: "idle",
       processData: null,
       previousFormat: tankState.processData?.format,
+      startTime: undefined,
     })
     setShowStopDialog(false)
-
-    mqtt.publish(`terplast/tk${tankNumber}/comando`, {
-      accion: "detener",
-      timestamp: Date.now(),
-    })
   }
 
   return (
     <div className="p-3 space-y-2">
       <TankHeader tankNumber={tankNumber} status={tankState.status} />
 
-      <TankInfo
-        status={tankState.status}
-        processData={tankState.processData}
-        weight={tankState.weight}
-        counter={tankState.counter}
-        onStart={() => setShowStartDialog(true)}
-        onStop={() => setShowStopDialog(true)}
-      />
+      <div className="grid grid-cols-[1fr_300px] gap-3">
+        <TankInfo
+          status={tankState.status}
+          processData={tankState.processData}
+          weight={tankState.weight}
+          counter={tankState.counter}
+          onStart={() => setShowStartDialog(true)}
+          onStop={() => setShowStopDialog(true)}
+        />
+
+        {tankState.processData ? (
+          <AutonomyIndicator
+            targetQuantity={tankState.processData.targetQuantity}
+            currentCount={tankState.counter}
+            gpm={tankState.processData.gpm}
+            startTime={tankState.startTime || null}
+            tankNumber={tankNumber}
+          />
+        ) : (
+          <div className="rounded-xl p-4 border border-[#3a3e45] bg-[#1a1e25] flex items-center justify-center">
+            <p className="text-gray-500 text-center text-sm">Inicie un proceso para ver la autonomía</p>
+          </div>
+        )}
+      </div>
 
       <div>
         <WeightChart

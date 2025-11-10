@@ -1,40 +1,46 @@
-# Etapa de dependencias
-FROM node:20-alpine AS deps
-WORKDIR /app
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
-
-# Etapa de build
+# ==============================
+# 🧩 Etapa 1: Build de la app
+# ==============================
 FROM node:20-alpine AS builder
+
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
+
+# Crear directorio de trabajo
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Copiar archivos de dependencias
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
 
-COPY --from=deps /app/node_modules ./node_modules
+# Instalar dependencias con pnpm
+RUN pnpm install
+
+# Copiar el resto del código del proyecto
 COPY . .
+
+# Compilar la aplicación Next.js
 RUN pnpm run build
 
-# Etapa de producción
-FROM node:20-alpine AS runner
+
+# ==============================
+# 🧱 Etapa 2: Producción
+# ==============================
+FROM node:20-alpine
+
+# Instalar pnpm globalmente (para ejecutar en producción)
+RUN npm install -g pnpm
+
+# Crear directorio de trabajo
 WORKDIR /app
 
-ENV NODE_ENV production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
+# Copiar los archivos necesarios desde el builder
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-USER nextjs
-
+# Exponer el puerto que usa Next.js
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
+# Comando de inicio (standalone mode)
 CMD ["node", "server.js"]
