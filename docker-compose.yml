@@ -7,51 +7,13 @@ services:
       dockerfile: Dockerfile
     container_name: terplast-v2
     ports:
-      - "3001:3000"  # Puerto 3001 para evitar conflicto con v1
+      - "3001:3000"
     environment:
       - NODE_ENV=production
-      - MQTT_BROKER_URL=mqtt://mqtt:1883
-      - NODERED_URL=http://nodered:1880
-    depends_on:
-      - mqtt
-      - nodered
+    restart: unless-stopped
     networks:
       - terplast-network
-    restart: unless-stopped
-
-  # MQTT Broker (si no lo tienes ya)
-  mqtt:
-    image: eclipse-mosquitto:latest
-    container_name: mqtt-broker
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    volumes:
-      - mqtt-data:/mosquitto/data
-      - mqtt-logs:/mosquitto/log
-    networks:
-      - terplast-network
-    restart: unless-stopped
-
-  # Node-RED (si no lo tienes ya)
-  nodered:
-    image: nodered/node-red:latest
-    container_name: node-red
-    ports:
-      - "1880:1880"
-    volumes:
-      - nodered-data:/data
-    environment:
-      - TZ=America/Argentina/Buenos_Aires
-    networks:
-      - terplast-network
-    restart: unless-stopped
 
 networks:
   terplast-network:
     driver: bridge
-
-volumes:
-  mqtt-data:
-  mqtt-logs:
-  nodered-data:

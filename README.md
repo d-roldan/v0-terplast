@@ -1,30 +1,74 @@
-# Simulador Tanque 6
+# Terplast V2 - Sistema de Control de Envasado
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Sistema de monitoreo y control para líneas de envasado con indicadores de autonomía en tiempo real.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/d-roldans-projects/v0-terplast)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/ct56hGOBgk8)
+## Características
 
-## Overview
+- Control de tanques de envasado con estado en tiempo real
+- Indicador de autonomía IDEAL vs REAL basado en GPM (Golpes Por Minuto)
+- Registro de actividad detallado
+- Interfaz responsive y moderna
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Despliegue con Docker
 
-## Deployment
+### Requisitos previos
 
-Your project is live at:
+- Docker
+- Docker Compose
 
-**[https://vercel.com/d-roldans-projects/v0-terplast](https://vercel.com/d-roldans-projects/v0-terplast)**
+### Instalación
 
-## Build your app
+1. Clona el repositorio:
+\`\`\`bash
+git clone <tu-repositorio>
+cd terplast-v2
+\`\`\`
 
-Continue building your app on:
+2. Construye y levanta el contenedor:
+\`\`\`bash
+docker-compose up -d
+\`\`\`
 
-**[https://v0.app/chat/ct56hGOBgk8](https://v0.app/chat/ct56hGOBgk8)**
+3. Accede a la aplicación:
+\`\`\`
+http://localhost:3001
+\`\`\`
 
-## How It Works
+### Comandos útiles
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+\`\`\`bash
+# Ver logs
+docker-compose logs -f terplast-v2
+
+# Detener el contenedor
+docker-compose down
+
+# Reconstruir después de cambios
+docker-compose up -d --build
+\`\`\`
+
+## Estructura del Proyecto
+
+\`\`\`
+terplast-v2/
+├── app/                    # Páginas de Next.js
+├── components/             # Componentes React
+├── hooks/                  # Hooks personalizados
+├── lib/                    # Utilidades
+├── public/                 # Archivos estáticos
+├── Dockerfile              # Configuración Docker
+├── docker-compose.yml      # Orquestación Docker
+└── package.json            # Dependencias
+\`\`\`
+
+## Tecnologías
+
+- Next.js 15
+- React 19
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+
+## Licencia
+
+Privado - Terplast
