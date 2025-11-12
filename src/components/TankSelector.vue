@@ -25,6 +25,7 @@
       </div>
       <template v-else>TK{{ tank }}</template>
 
+      <!-- Agregar indicador de estado activo del tanque -->
       <div v-if="isActive(tank)" class="absolute -top-1 -right-1">
         <span
           :class="[
@@ -51,7 +52,7 @@ interface Props {
   tankStates: Record<number, TankState>
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 defineEmits<{
   selectTank: [tank: number | '3-4' | 'log']
 }>()
@@ -96,7 +97,12 @@ const getTankColors = (tank: number | '3-4' | 'log') => {
 }
 
 const isActive = (tank: number | '3-4' | 'log') => {
-  // Implementar lógica para determinar si el tanque está activo
+  if (tank === '3-4') {
+    return props.tankStates[3]?.status === 'filling' || props.tankStates[4]?.status === 'filling'
+  }
+  if (typeof tank === 'number') {
+    return props.tankStates[tank]?.status === 'filling'
+  }
   return false
 }
 </script>

@@ -1,55 +1,8 @@
 {
-  "name": "terplast-v2",
-  "version": "2.0.0",
+  "name": "my-v0-project",
+  "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "build": "vue-tsc && vite build",
-    "dev": "vite",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@emotion/is-prop-valid": "latest",
-    "@radix-ui/react-label": "latest",
-    "@radix-ui/react-slot": "latest",
-    "@vercel/analytics": "latest",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "framer-motion": "latest",
-    "jiti": "latest",
-    "less": "latest",
-    "lightningcss": "latest",
-    "lucide-react": "^0.454.0",
-    "lucide-vue-next": "^0.454.0",
-    "next": "16.0.1",
-    "next-themes": "latest",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "recharts": "latest",
-    "sass": "latest",
-    "sass-embedded": "latest",
-    "stylus": "latest",
-    "sugarss": "latest",
-    "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7",
-    "terser": "latest",
-    "tsx": "latest",
-    "tw-animate-css": "latest",
-    "vue": "latest",
-    "yaml": "latest"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.1.9",
-    "@types/node": "^22",
-    "@types/react": "19.2.3",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-vue": "^5.2.1",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.5",
-    "tailwindcss": "^4.1.9",
-    "typescript": "^5",
-    "vite": "^6.0.11",
-    "vue-tsc": "^2.2.0"
+    "build": "echo 'no build script'"
   }
 }
