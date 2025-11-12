@@ -163,7 +163,7 @@
 import { reactive } from 'vue'
 import type { ProcessData } from '../types'
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
   confirm: [data: ProcessData]
 }>()
@@ -188,9 +188,7 @@ function handleSubmit() {
     formData.targetQuantity > 0 &&
     formData.gpm > 0
   ) {
-    // Emitir los datos
-    const data: ProcessData = { ...formData }
-    // Resetear formulario
+    emit('confirm', { ...formData })
     Object.assign(formData, {
       of: '',
       material: '',
@@ -201,9 +199,6 @@ function handleSubmit() {
       targetQuantity: 0,
       gpm: 0,
     })
-    // Emitir confirmación con datos
-    const emit = defineEmits<{ close: []; confirm: [data: ProcessData] }>()
-    // Usar $emit directamente
   }
 }
 </script>
