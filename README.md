@@ -83,6 +83,8 @@ Componente para control individual de un tanque. Incluye:
   - ⚠ Amarillo: En alerta (fuera de ±0.3% pero dentro de ±0.5%)
   - ✗ Rojo: Fuera de tolerancia (>±0.5%)
 - **Controles de inicio/detención** del proceso
+<img width="1810" height="807" alt="image" src="https://github.com/user-attachments/assets/e6292075-c3a6-46e7-b037-b5b74dca416e" />
+
 
 ### 3. **DualTankControl** (`components/dual-tank-control.tsx`)
 
@@ -96,6 +98,9 @@ Vista de autonomía que muestra para cada tanque:
 - **Consumo**: kg/min basado en formato y GPM estándar
 - **Golpes por Minuto (GPM)**: Velocidad de envasado actual
 - **Reloj en tiempo real** con zona horaria de Argentina
+
+<img width="1160" height="901" alt="image" src="https://github.com/user-attachments/assets/29656f26-22d2-438a-af8c-5e039c5fae0c" />
+
 
 ### 5. **WeightChart** (`components/weight-chart.tsx`)
 
