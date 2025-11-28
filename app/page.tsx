@@ -5,16 +5,17 @@ import { TankSelector } from "@/components/tank-selector"
 import { TankControl } from "@/components/tank-control"
 import { DualTankControl } from "@/components/dual-tank-control"
 import { ActivityLog } from "@/components/activity-log"
+import { TankAutonomy } from "@/components/tank-autonomy"
 import type { TankState } from "@/components/tank-control"
 import type { PackagingSummary } from "@/components/activity-log"
 
 export default function Home() {
-  const [selectedTank, setSelectedTank] = useState<number | "3-4" | "log">("3-4")
+  const [selectedTank, setSelectedTank] = useState<number | "3-4" | "log" | "autonomy">("3-4")
   const [tankStates, setTankStates] = useState<Record<number, TankState>>({
-    3: { status: "idle", weight: 1950, counter: 313, chartData: [], processData: null },
-    4: { status: "idle", weight: 1950, counter: 313, chartData: [], processData: null },
-    5: { status: "idle", weight: 1950, counter: 313, chartData: [], processData: null },
-    6: { status: "idle", weight: 1950, counter: 313, chartData: [], processData: null },
+    3: { status: "idle", weight: 2850, counter: 313, chartData: [], processData: null },
+    4: { status: "idle", weight: 1650, counter: 313, chartData: [], processData: null },
+    5: { status: "idle", weight: 3420, counter: 313, chartData: [], processData: null },
+    6: { status: "idle", weight: 980, counter: 313, chartData: [], processData: null },
   })
 
   const [packagingSummaries, setPackagingSummaries] = useState<PackagingSummary[]>([])
@@ -39,10 +40,12 @@ export default function Home() {
       {/* Columna izquierda - Selector de tanques */}
       <TankSelector selectedTank={selectedTank} onSelectTank={setSelectedTank} tankStates={tankStates} />
 
-      {/* Área principal - Control del tanque o registro */}
+      {/* Área principal - Control del tanque, registro o autonomía */}
       <div className="flex-1 overflow-auto">
         {selectedTank === "log" ? (
           <ActivityLog summaries={packagingSummaries} />
+        ) : selectedTank === "autonomy" ? (
+          <TankAutonomy tankStates={tankStates} />
         ) : selectedTank === "3-4" ? (
           <DualTankControl
             tank3State={tankStates[3]}

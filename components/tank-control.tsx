@@ -9,8 +9,13 @@ import { StartProcessDialog } from "./start-process-dialog"
 import { StopProcessDialog } from "./stop-process-dialog"
 import { useState } from "react"
 import type { PackagingSummary } from "./activity-log"
-import { useMQTTClient } from "@/lib/mqtt-client"
-import type { TankControlProps } from "./tank-control-props"
+
+interface TankControlProps {
+  tankNumber: number
+  tankState: TankState
+  onUpdateState: (newState: Partial<TankState>) => void
+  onAddSummary: (summary: Omit<PackagingSummary, "id">) => void
+}
 
 export type ProcessStatus = "idle" | "filling" | "stopped"
 export type Format = "5kg" | "10kg" | "20kg" | "25kg"
@@ -40,11 +45,16 @@ const formatWeights = {
   "25kg": 25,
 }
 
+const standardGPM = {
+  "25kg": 4,
+  "20kg": 11,
+  "10kg": 13,
+  "5kg": 13, // Usar mismo que 10kg
+}
+
 export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary }: TankControlProps) {
   const [showStartDialog, setShowStartDialog] = useState(false)
   const [showStopDialog, setShowStopDialog] = useState(false)
-
-  const mqtt = useMQTTClient()
 
   const processMetrics = useRef({
     startTime: new Date(),
@@ -55,74 +65,51 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
   })
 
   useEffect(() => {
-    if (!mqtt.isConnected) return
+    if (tankState.status === "filling" && tankState.processData) {
+      const format = tankState.processData.format
+      const nominalWeight = formatWeights[format]
+      const gpm = standardGPM[format]
+      const intervalMs = (60 / gpm) * 1000 // Convertir GPM a milisegundos entre envases
 
-    const tankId = `tk${tankNumber}`
+      const interval = setInterval(() => {
+        const tolerance = nominalWeight * 0.02
+        const randomWeight = nominalWeight + (Math.random() * tolerance * 4 - tolerance * 2)
 
-    mqtt.subscribe(`terplast/${tankId}/peso_tanque`, (message) => {
-      try {
-        const data = JSON.parse(message)
-        console.log(`[v0] Peso tanque ${tankNumber} recibido:`, data.peso)
-        onUpdateState({ weight: data.peso })
-      } catch (error) {
-        console.error("[v0] Error parseando peso_tanque:", error)
-      }
-    })
+        // Reducir el peso del tanque por el peso del envase
+        const newTankWeight = Math.max(0, tankState.weight - randomWeight)
 
-    mqtt.subscribe(`terplast/${tankId}/peso_envase`, (message) => {
-      try {
-        const data = JSON.parse(message)
-        console.log(`[v0] Envase ${data.numeroEnvase} recibido:`, data.peso)
+        onUpdateState({
+          weight: newTankWeight,
+          counter: tankState.counter + 1,
+          chartData: [
+            ...tankState.chartData,
+            {
+              x: tankState.chartData.length + 1,
+              y: randomWeight,
+            },
+          ].slice(-100),
+        })
 
-        if (tankState.status === "filling" && tankState.processData) {
-          const nominalWeight = formatWeights[tankState.processData.format]
-          const tolerance = nominalWeight * 0.02
-
-          onUpdateState({
-            counter: tankState.counter + 1,
-            chartData: [
-              ...tankState.chartData,
-              {
-                x: tankState.chartData.length + 1,
-                y: data.peso,
-              },
-            ].slice(-100),
-          })
-
-          const status =
-            data.peso < nominalWeight - tolerance
+        const status =
+          randomWeight < nominalWeight - tolerance
+            ? "fuera"
+            : randomWeight > nominalWeight + tolerance
               ? "fuera"
-              : data.peso > nominalWeight + tolerance
-                ? "fuera"
-                : data.peso >= nominalWeight - tolerance && data.peso <= nominalWeight - tolerance / 2
+              : randomWeight >= nominalWeight - tolerance && randomWeight <= nominalWeight - tolerance / 2
+                ? "alerta"
+                : randomWeight >= nominalWeight + tolerance / 2 && randomWeight <= nominalWeight + tolerance
                   ? "alerta"
-                  : data.peso >= nominalWeight + tolerance / 2 && data.peso <= nominalWeight + tolerance
-                    ? "alerta"
-                    : "dentro"
+                  : "dentro"
 
-          processMetrics.current.weights.push(data.peso)
-          if (status === "dentro") processMetrics.current.withinTolerance++
-          else if (status === "alerta") processMetrics.current.inAlert++
-          else processMetrics.current.outOfTolerance++
-        }
-      } catch (error) {
-        console.error("[v0] Error parseando peso_envase:", error)
-      }
-    })
+        processMetrics.current.weights.push(randomWeight)
+        if (status === "dentro") processMetrics.current.withinTolerance++
+        else if (status === "alerta") processMetrics.current.inAlert++
+        else processMetrics.current.outOfTolerance++
+      }, intervalMs)
 
-    return () => {
-      mqtt.unsubscribe(`terplast/${tankId}/peso_tanque`)
-      mqtt.unsubscribe(`terplast/${tankId}/peso_envase`)
+      return () => clearInterval(interval)
     }
-  }, [
-    mqtt.isConnected,
-    tankNumber,
-    tankState.status,
-    tankState.processData,
-    tankState.counter,
-    tankState.chartData,
-    onUpdateState,
-  ])
+  }, [tankState.status, tankState.processData, tankState.weight, tankState.counter, tankState.chartData, onUpdateState])
 
   const handleStartProcess = (data: ProcessData) => {
     processMetrics.current = {
@@ -141,29 +128,15 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
       previousFormat: tankState.processData?.format,
     })
     setShowStartDialog(false)
-
-    mqtt.publish(`terplast/tk${tankNumber}/comando`, {
-      accion: "iniciar",
-      timestamp: Date.now(),
-      data: data,
-    })
   }
 
   const handleStopProcess = () => {
     if (tankState.processData && processMetrics.current.weights.length > 0) {
       const weights = processMetrics.current.weights
-      const endTime = new Date()
-      const duracionSegundos = Math.floor((endTime.getTime() - processMetrics.current.startTime.getTime()) / 1000)
-
-      const disponibilidad = 100
-      const rendimiento = (tankState.counter / (duracionSegundos / 2)) * 100
-      const calidad = (processMetrics.current.withinTolerance / tankState.counter) * 100
-      const oee = (disponibilidad * rendimiento * calidad) / 10000
-
       const summary: Omit<PackagingSummary, "id"> = {
         tankNumber,
         startTime: processMetrics.current.startTime,
-        endTime,
+        endTime: new Date(),
         processData: tankState.processData,
         totalUnits: tankState.counter,
         withinTolerance: processMetrics.current.withinTolerance,
@@ -174,29 +147,6 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
         maxWeight: Math.max(...weights),
       }
       onAddSummary(summary)
-
-      mqtt.publish(`terplast/tk${tankNumber}/resumen`, {
-        tankId: `tk${tankNumber}`,
-        legajo: tankState.processData.legajo,
-        ordenEnvasado: tankState.processData.ordenEnvasado,
-        inicio: processMetrics.current.startTime.getTime(),
-        fin: endTime.getTime(),
-        duracionSegundos,
-        totalEnvases: tankState.counter,
-        pesoPromedio: summary.averageWeight,
-        pesoMin: summary.minWeight,
-        pesoMax: summary.maxWeight,
-        formatoSeleccionado: tankState.processData.format,
-        toleranciaMinima: formatWeights[tankState.processData.format] * 0.98,
-        toleranciaMaxima: formatWeights[tankState.processData.format] * 1.02,
-        envasesOptimos: processMetrics.current.withinTolerance,
-        envasesAlerta: processMetrics.current.inAlert,
-        envasesFuera: processMetrics.current.outOfTolerance,
-        disponibilidad: Math.round(disponibilidad * 100) / 100,
-        rendimiento: Math.round(rendimiento * 100) / 100,
-        calidad: Math.round(calidad * 100) / 100,
-        oee: Math.round(oee * 100) / 100,
-      })
     }
 
     onUpdateState({
@@ -205,11 +155,6 @@ export function TankControl({ tankNumber, tankState, onUpdateState, onAddSummary
       previousFormat: tankState.processData?.format,
     })
     setShowStopDialog(false)
-
-    mqtt.publish(`terplast/tk${tankNumber}/comando`, {
-      accion: "detener",
-      timestamp: Date.now(),
-    })
   }
 
   return (
