@@ -70,6 +70,7 @@ Barra lateral de navegación que permite:
 - Acceder a la vista de autonomía
 - Ver el registro de actividades
 - Indicador visual de estado de envasado (punto verde parpadeante)
+<img width="96" height="468" alt="image" src="https://github.com/user-attachments/assets/84965b60-edeb-4af1-b8c3-b9a5fd81614f" />
 
 ### 2. **TankControl** (`components/tank-control.tsx`)
 
